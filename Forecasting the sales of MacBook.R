@@ -1,3 +1,9 @@
+# MacBook sales forecasting using different forecasting models:
+# Naïve Method	
+# Simple Moving Averages	
+# Simple Smoothing	
+# Holt-Winters	
+
 library(readxl)
 apple_sales=apple_data
 head(apple_sales)
