@@ -1,21 +1,32 @@
+# About Dataset
+# Crime in US has been steadily decreasing over the years. In the US, FBI tracks crime data. Data is tracked by type of crime. For this exercise, we will focus on robberies, theft, and larceny. See https://www.fbi.gov/services/cjis/ucr for more detail.
+# Forecasting the Crimes in U.S using the below forcasting methods:
+# Naïve Method	
+# Simple Moving Averages	
+# Smoothing	
+# Holt-Winters	
+# ARIMA or Box-Jenkins
+
+
 library(forecast)
 library(fpp)
 library(TTR)
 new=Data_Fall_2018_Crimes
 new
 plot(new$Data,type="o")
-#Question 1
+
+# Question 1
 timeseries= ts(new$Data,frequency = 12,start=c(2008,1))
 plot(timeseries)
 title("Timeseries Plot for Crimes")
 #Question 2: Please summaries your observations of the times series plot
 
-#Question 3: Central Tendency
+# Question 3: Central Tendency
 #What are the min, max, mean, median, 1st and 3rd Quartile values of the times series? 
 summary(timeseries)
 boxplot(timeseries, main= "BoxPlot for theft, Robberies and Larcency",ylab="# of crimes")
 
-#Question 4:
+# Question 4:
 decomp=decompose(timeseries)
 plot(decomp)
 decomp$type
@@ -26,7 +37,7 @@ plot(adjust, main="Seasonally Adjusted",ylab="# of theft")
 plot(timeseries, main="Timeseries vs Seasonal Adjusted",ylab="# of theft")
 lines(adjust,col="Red",type="o")
 
-#Naive method
+# Naive method
 naive= naive(timeseries,h=18)
 plot(forecast(naive),ylab = "# of Crime",xlab = "Time")
 
@@ -36,26 +47,26 @@ plot(naive_resid)
 hist((naive_resid))
 fitted=naive$fitted
 
-#Fitted vs Residual
+# Fitted vs Residual
 naive$residuals
 residual=naive$residuals[1-12]
 fitted=naive$fitted[1-12]
 plot(fitted~residual,main="Fitted vs Residual",col=c("Red","Blue"))
 legend(-380,800,legend= c("Fitted","Residuals"),col=c("Red","Blue"),lwd = 1:1,cex=1)
 
-#Actuals vs Residuals
+# Actuals vs Residuals
 actual=naive$x[1-12]
 residual=naive$residuals[1-12]
 plot(actual~residual,main="Actual vs Residual",col=c("Red","black"))
 legend(-380,1750,legend= c("Actual","Residuals"),col=c("Red","black"),lwd = 1:1,cex=1)
 
-#ACF of residuals
+# ACF of residuals
 ACF_plot=Acf(residual)
 accuracy(naive)
 
 forecast(naive)
 
-#SIMPLE MOVING AVERAGE
+# SIMPLE MOVING AVERAGE
 plot(timeseries)
 
 #order 3
@@ -85,7 +96,7 @@ forecast_12=forecast(simple_3,h=12)
 forecast_12
 plot(forecast_12,ylab = "# of Crimes",xlab = "Years")
 
-#Simple Exponential Smoothing:
+# Simple Exponential Smoothing:
 smooth=ses(timeseries,h=12)
 summary(smooth)
 smooth_resid=smooth$residuals
@@ -115,7 +126,7 @@ plot(forecast(smooth,h=12))
 holt_resid
 holt_fit
 
-#Holt Winters
+# Holt Winters
 holt=HoltWinters(timeseries)
 holt_forecast= forecast(holt,h=12)
 holt_forecast
