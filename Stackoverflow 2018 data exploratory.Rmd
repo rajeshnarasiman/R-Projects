@@ -1,0 +1,275 @@
+---
+title: "Stackoverflow 2018 survey Exploratory Data Analysis"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,warning=FALSE,message=FALSE)
+```
+
+Loading all the required package for this Analysis
+
+```{r}
+library(readxl)
+library(tidyverse)
+library(ggplot2)
+library(highcharter)
+library(plotly)
+library(stringr)
+library(viridis)
+library(gridExtra)
+library(tidyverse)
+library(highcharter)
+library(plotly)
+library(dygraphs)
+library(lubridate)
+library("viridisLite")
+library(leaflet)
+library(countrycode)
+library(xts)
+library(htmltools)
+library(spatial)
+library(rlang)
+library(ggplot2)
+library(purrr)
+library(rworldmap)
+library (igraph)
+library(randomcoloR)
+
+if (!require("pacman")) install.packages("pacman") 
+pacman::p_load(tidyverse, skimr, GGally, plotly, viridis, caret, randomForest, e1071, rpart, 
+               xgboost, h2o, corrplot, rpart.plot, corrgram, lightgbm, ggplot2, highcharter, 
+               ggthemes, psych, scales, treemap, treemapify, repr, cowplot, magrittr, ggpubr,
+               RColorBrewer, plotrix, ggrepel,dplyr,tidyr,countrycode,gdata,visNetwork,stringr,scales,reshape2)
+
+
+options(repr.plot.width=8, repr.plot.height=6)
+options(warn=-1)
+```
+
+**Introduction:**
+This 2018 Developer Stackoverflow Survey results are organized as:
+
+**survey_results_public** contains the main survey results, one respondent per row and one column per question
+
+This dataset consists the responses of 98,855 respondents with 129 feature variables.
+
+**Focused area:**
+
+- **WHO’s PART OF THE SURVEY?**
+
+- **GENDER CLASSIFICATION BASED ON AGE**
+
+- **EMPLOYMENT STATUS OF DEVELOPERS**
+
+- **FEELING LEFT OUT**
+
+- **AI**
+
+- **PYTHON vs R**
+
+```{r}
+survey18 <- read.csv("/Users/raj/Downloads/developer_survey_2018 (1)/survey_results_public.csv")
+head(survey18)
+```
+
+**WHO’s PART OF THE SURVEY?**
+MOST REPRESENTED COUNTRIES
+
+```{r}
+## top countries with respect to SO
+survey18 %>% 
+  filter(!is.na(Country)) %>% 
+  group_by(Country) %>% 
+  count() %>% 
+  arrange(desc(n)) %>% 
+  #head(10) %>% 
+  hchart('treemap',hcaes(x = Country, value = n, color = n)) %>% 
+  hc_title(text = 'Countries from where overall respondents come from') 
+```
+
+
+**Summary:**
+
+Out of 98,855 developers, following  countries have highest number of respondents :
+
+•	United States : 20,309 Developers
+
+•	India : 13,721 Developers
+
+•	Germany : 6,459 Developers
+
+•	United Kingdom : 6,221 Developers
+
+•	Canada : 3,393 Developers
+
+
+
+**GENDER CLASSIFICATION BASED ON AGE**
+
+```{r}
+##Bifurcation by age and gender
+survey18 %>% 
+  filter(!is.na(Gender)) %>%
+  filter(!is.na(Age)) %>% 
+  filter(Gender %in% c('Male','Female')) %>% 
+  select(Gender,  Age) %>%
+  mutate(Gender = str_split(Gender, pattern = ";")) %>%
+  unnest(Gender) %>%
+  group_by(Gender, Age) %>%
+  summarise(Count = n()) %>%
+  arrange(desc(Count)) %>%
+  ungroup() %>%
+  mutate(Gender = reorder(Gender,Count)) %>%
+  hchart('column',hcaes('Gender','Count', group = 'Age')) %>% 
+  #hc_colors(c("darkorange", "darkgray")) %>% 
+  hc_title(text = 'Male vs Female by Age - Stack Overflow Members') %>% 
+  hc_yAxis(type = 'logarithmic')
+```
+
+The above interactive dashboard depicts the proportion of users in the Stack Overflow community bifurcated within varying degrees based on age classification.
+
+**INSIGHTS**
+
+•	Users under the age of 18 strongly support a special area for beginners.
+
+•	Users between 18-34 years old strongly support adding a career growth Q & A to Stack Overflow.
+
+•	Women show stronger support for all of the hypothetical tools as compared to men, and women show the strongest support for a career growth Q & A and employer/job reviews
+
+•	Salary by Gender: Males tend to have a slighter median salary. Also, male respondents tend to have a higher presence compared to female respondents.
+
+
+
+**EMPLOYMENT STATUS OF DEVELOPERS**
+
+```{r}
+##chalktheme
+survey18 %>% 
+  filter(!is.na(Employment)) %>% 
+  count(Employment) %>% 
+  hchart('column',hcaes('Employment','n')) %>% 
+  hc_title(text = "Employment Type") %>% 
+  hc_subtitle(text = "Source: Stack Overflow Dev Survey") %>%  hc_add_theme(hc_theme_chalk())
+```
+
+• Employeed full-time : 74 %
+
+•	Independent Contractor, Freelancer or Self-employed : 9.74 %
+
+•	Not employed but looking for work : 6.09 %
+
+•	Employed part-time : 5.64 %
+
+•	Not employeed and not looking for work : 4.33 %
+
+•	Retired : 0.238 %
+
+
+
+
+**FEELING LEFT OUT**
+
+```{r}
+survey18 %>% 
+  filter(!is.na(Country),
+         !is.na(StackOverflowConsiderMember), 
+         StackOverflowConsiderMember %in% c("Yes","No" )) %>% 
+  group_by(Country) %>% 
+  mutate(n = n())  %>% 
+  filter(n > 150) %>% 
+  ungroup() %>% 
+  select(Country,StackOverflowConsiderMember) %>% 
+  group_by(Country,StackOverflowConsiderMember) %>% 
+  count()  %>% 
+  #filter(n > 150) %>% 
+  spread(StackOverflowConsiderMember,n) %>% 
+  mutate(No_to_Yes = round((No/Yes) * 100)) %>% 
+  arrange(desc(No_to_Yes)) -> no_to_yes 
+
+View(head(no_to_yes,10))
+  data(worldgeojson, package = "highcharter")
+
+
+highchart() %>%
+  hc_add_series_map(worldgeojson, no_to_yes, value = "No_to_Yes", joinBy = c('name','Country'))  %>% 
+  #hc_colors(c("darkorange", "darkgray")) %>% 
+  hc_colorAxis(stops = color_stops()) %>% 
+  hc_title(text = "Countries - Ratio of No to Yes (feeling part of SO)") %>% 
+  hc_subtitle(text = "Less is Better")
+```
+
+
+
+**Countries**
+
+The idea here is to have a normalized index that could represent the crowd based on Country they belong to, feeling left out (not considering to be part of Stack Overflow Member). With taking entries from the countries that had minimum 150 respondents, Top 5 countries containing respondents feeling left out are:
+
+•	Finland
+
+•	Norway
+
+•	New Zealeand
+
+•	Canada
+
+•	United Kingdom
+
+
+
+**AI**
+
+Whose Responsibility?
+
+```{r}
+## AI RESPONSIBLE
+survey18 %>% 
+  filter(!is.na(AIResponsible)) %>% 
+  count(AIResponsible) %>% 
+  hchart("pie",hcaes(x = "AIResponsible", y = "n")) %>% 
+  hc_add_theme(hc_theme_darkunica()) %>% 
+  hc_title(text = 'What developers think whose responsibility to consider the ramifications of increasingly advanced AI technology?')
+```
+Close to half of the respondents feel, Developers and organizations who create AI products and solutions must take the ownership of responsibility in building ethical AI, while more than a quarter supports a body or Government to do the same.
+
+
+
+**PYTHON vs R**
+
+```{r}
+##Python vs R
+options(repr.plot.width=10, repr.plot.height=8) 
+
+languages.preference <- survey18 %>% 
+  filter(LanguageWorkedWith == "Python"| LanguageWorkedWith == "R") %>% 
+  filter(!is.na(Country)) %>% group_by(Country, LanguageWorkedWith) %>% summarise(Count=n()) %>% 
+  arrange(desc(Count)) %>% head(50) %>%
+  ggplot(aes(x=reorder(Country, Count), y=Count, fill=LanguageWorkedWith)) + 
+  geom_bar(stat="identity") + facet_wrap(~LanguageWorkedWith) + coord_flip() + theme_bw() +
+  theme(plot.title=element_text(hjust=0.5), strip.background = element_blank(), strip.text.x = element_blank()) +  
+  labs(x="Countries", y="Count", title="Python vs R \n Language Preference") + 
+  scale_fill_manual(values=c("red", "blue"))
+
+languages.preference
+
+```
+
+**Summary:**
+
+•	Top 5 Countries Respondents: The top 5 countries with most respondents use more Python than R.
+
+•	R Language: Proportion wise the US and Germany use R more considerably than other countries.
+
+•	Python Language: India, US and the UK use Python considerably more than other Countries.
+
+•	Employment Status: Most respondents are employed full-time (Almost 75% of respondents).
+
+•	Hobby and Student: Most people that are not a student tend to Code as a Hobby.
+
+•	Salary Distribution: Normal distribution of salary is right-skewed and logarithmic distribution is left-skewed.
+
+•	Salary by Country: The US, Switzerland and Israel tend to offer the best salary.
+
+•	Employment: Switzerland and South Africa are amongst the highest in employment.
